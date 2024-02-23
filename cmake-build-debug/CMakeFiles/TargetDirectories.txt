@@ -1,0 +1,3 @@
+C:/Users/khang/OneDrive/Documents/Undergraduate/DSA_Reduxx/K_NN_List/cmake-build-debug/CMakeFiles/K_NN_List.dir
+C:/Users/khang/OneDrive/Documents/Undergraduate/DSA_Reduxx/K_NN_List/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/khang/OneDrive/Documents/Undergraduate/DSA_Reduxx/K_NN_List/cmake-build-debug/CMakeFiles/rebuild_cache.dir
