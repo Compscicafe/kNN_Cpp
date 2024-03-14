@@ -308,7 +308,6 @@ void ArrayList<T>::reverse()
 }
 
 
-
 //Dataset
 
 bool Dataset::loadFromCSV(const char *fileName)
@@ -316,7 +315,7 @@ bool Dataset::loadFromCSV(const char *fileName)
     ifstream file(fileName);
     if(!file.is_open())
     {
-        throw;
+        throw("File not found");
     }
     if (data->length() > 0)
     {
@@ -365,11 +364,11 @@ void Dataset::printHead(int nRows, int nCols) const
     {
         return;
     }
-    for(int i=0; i<nCols-1; i++)
-    {
-        cout << labels->get(i) << " ";
-    }
-    cout << labels->get(nCols-1) << endl;
+    //for(int i=0; i<nCols-1; i++)
+   // {
+     //   cout << labels->get(i) << " ";
+   // }
+    //cout << labels->get(nCols-1) << endl;
 
     for (int i=0 ; i < nRows; i++)
     {
@@ -412,19 +411,17 @@ void Dataset::getShape(int &nRows, int &nCols) const
 {
     nRows = data->length();
     nCols = data->get(0)->length();
+    cout << nRows << "x" << nCols << endl;
 }
 
 void Dataset::columns() const
 {
-    cout << "label";
-    for(int i=0; i<data->get(0)->length(); i++)
+    for(int i=0; i<labels->length()-1; i++)
     {
-        for(int j=0; j < data->length(); j++)
-        {
-            cout << " " << data->get(j)->get(i);
-        }
-        cout << " " << i;
+        cout << labels->get(i) << " ";
     }
+    cout << labels->get(labels->length()-1) << endl;
+
 }
 
 bool Dataset::drop(int axis, int index, std::string columns)
@@ -464,84 +461,87 @@ bool Dataset::drop(int axis, int index, std::string columns)
 
 Dataset Dataset::extract(int startRow, int endRow, int startCol, int endCol) const
 {
-    Dataset result;
-    if (startRow < 0)
+    Dataset result = Dataset();
+    if (endRow ==-1)
     {
-        startRow = 0;
+        endRow = data->length()-1;
     }
-    if (endRow < 0 || endRow >= data->length())
+    if (endCol == -1)
     {
-        endRow = data->length() - 1;
+        endCol = data->get(0)->length()-1;
     }
-    if (startCol < 0)
+
+    for (int i = startRow; i < endRow; i++)
     {
-        startCol = 0;
-    }
-    if (endCol < 0 || endCol >= data->get(0)->length())
-    {
-        endCol = data->get(0)->length() - 1;
-    }
-    for (int i = startRow; i <= endRow; i++)
-    {
-        LinkedList<int> *row = new LinkedList<int>;
-        for (int j = startCol; j <= endCol; j++)
+        LinkedList<int>* row = new LinkedList<int>();
+        for (int j = startCol; j < endCol; j++)
         {
-            row->push_back(data->get(i)->get(j));
+            row->push_back(this->data->get(i)->get(j));
         }
         result.data->push_back(row);
     }
     return result;
 }
 
-LinkedList<LinkedList<int> > Dataset::getData() const
+LinkedList<LinkedList<int>*>* Dataset::getData() const
 {
 
-    LinkedList<LinkedList<int>> res;
-    for (int i = 0; i < data->length(); i++) {
-        res.push_back(*data->get(i));
-    }
-    return res;
-}
-
-
-bool Dataset::getSize() const
-{
-    return this->n;
-
+    return this->data;
 }
 
 //kNN
-ArrayList<ArrayList<int> *> * kNN::convert2D(const LinkedList<LinkedList<int>> &list) {
-    ArrayList<ArrayList<int> *> *result = new ArrayList<ArrayList<int> *>;
-    for (int i = 0; i < list.length(); ++i)
-    {
-        ArrayList<int> *subList = new ArrayList<int>;
-        LinkedList<int>&llSubList = list.get(i);
-        for (int j = 0; j < llSubList.length(); ++j)
-        {
-            subList->push_back(llSubList.get(j));
-        }
-        result->push_back(subList);
-    }
-    return result;
-}
-
-ArrayList<int>* kNN::convert1D( const LinkedList<int> &list)
+ArrayList<int>* kNN::convert1D( LinkedList<int>* list)
 {
     ArrayList<int>* res = new ArrayList<int>;
 
-    for (int i = 0; i < list.length(); ++i)
+    for (int i = 0; i < list->length(); ++i)
     {
-        res->push_back(list.get(i));
+        res->push_back(list->get(i));
     }
     return res;
 }
 
 
+void train_test_split(Dataset &X, Dataset &y, double test_size, Dataset &X_train,
+                      Dataset &X_test, Dataset &y_train, Dataset &y_test)
+{
+    int nRows = X.getData()->length();
+    int nTrain = (int)ceil(nRows* (1 - test_size));
+    for(int i=0; i < nTrain;i++)
+    {
+        LinkedList<int>* Xrow = new LinkedList<int>();
+        LinkedList<int>* Yrow = new LinkedList<int>();
+        X_train.getData()->push_back(Xrow);
+        y_train.getData()->push_back(Yrow);
+        for(int j=0; j < X.getData()->get(0)->length();j++)
+        {
+            X_train.getData()->get(i)->push_back(X.getData()->get(i)->get(j));
+        }
+        y_train.getData()->get(0)->push_back(y.getData()->get(i)->get(0));
+
+    }
+
+    for(int i=nTrain; i < nRows;i++)
+    {
+        LinkedList<int>* Xrow = new LinkedList<int>();
+        LinkedList<int>* Yrow = new LinkedList<int>();
+        X_test.getData()->push_back(Xrow);
+        y_test.getData()->push_back(Yrow);
+        for(int j=0; j < X.getData()->get(0)->length();j++)
+        {
+            X_test.getData()->get(i-nTrain)->push_back(X.getData()->get(i)->get(j));
+        }
+        y_test.getData()->get(0)->push_back(y.getData()->get(i)->get(0));
+
+    }
+
+
+}
 // Then in your fit function
 
 void kNN::fit(const Dataset &X_train, const Dataset &y_train)
 {
+
     if (this->xTrain != nullptr)
     {
         for(int i=0; i < this->xTrain->length();i++)
@@ -550,13 +550,24 @@ void kNN::fit(const Dataset &X_train, const Dataset &y_train)
         }
 
     }
-    this->xTrain = this->convert2D(X_train.getData());
-
+    else
+    {xTrain = new ArrayList<ArrayList<int>*>(X_train.getData()->length());
+    for (int i = 0; i < X_train.getData()->length(); ++i) {
+        xTrain->push_back(convert1D(X_train.getData()->get(i)));
+    }
+        }
     if (this->yTrain != nullptr)
     {
         delete yTrain;
     }
-    this->yTrain = this->convert1D(y_train.getData().get(0));
+    else {
+        yTrain = new ArrayList<int>(y_train.getData()->length());
+        for (int i = 0; i < y_train.getData()->length(); ++i) {
+            yTrain->push_back(y_train.getData()->get(i)->get(0));
+        }
+
+    }
+
 }
 
 inline int majority(ArrayList<int> &arr)
@@ -580,27 +591,7 @@ inline int majority(ArrayList<int> &arr)
 }
 
 
-void train_test_split(Dataset& X, Dataset& y, double test_size,
-                      Dataset& X_train, Dataset& X_test, Dataset& y_train, Dataset& y_test)
-                      {
 
-    int n = X.getRow();
-    int m = X.getCols();
-    int nTrain = n * (1 - test_size);
-    int nTest = n - nTrain;
-    for (int i = 0; i < nTrain; i++)
-    {
-        LinkedList<int> *row = new LinkedList<int>();
-        for (int j = 0; j < m; j++)
-        {
-            row->push_back(X.getData().get(i).get(j));
-        }
-       // X_train.getData().push_back(row);
-        y_train.getData().get(0).push_back(y.getData().get(0).get(i));
-    }
-
-    return;
-}
 
  int Hoare(int left, int right)
 {
@@ -642,12 +633,12 @@ void qSort(ArrayList<int> &arr, int left, int right)
 
 
 
-Dataset kNN::predict(const Dataset &X_test)
-{
-    Dataset res;
-    ArrayList<int>* distances = new ArrayList<int>();
-    int cnt=0;
-
+//Dataset kNN::predict(const Dataset &X_test)
+//{
+ //   Dataset res;
+   // ArrayList<int>* distances = new ArrayList<int>();
+    //int cnt=0;
+    /*
     ArrayList<ArrayList<int>*>* sub_Test = convert2D(X_test.getData());
     //LinkedList<int> row = X_test.getData().get(0);
 
@@ -673,12 +664,12 @@ Dataset kNN::predict(const Dataset &X_test)
             tmp.push_back(distances->get(i));
         }
         distances->clear();
-        res.getData().get(0).push_back(majority(tmp));
+        res.getData()->get(0)->push_back(majority(tmp));
 
     }
     delete distances;
     sub_Test->clear();
     delete sub_Test;
 return res;
+*/
 
-}

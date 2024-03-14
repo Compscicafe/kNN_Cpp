@@ -41,17 +41,17 @@ private:
     Node<T>* curr;
     //currpos == positions[0]. slow == pos[1], fast = pos[2];
 public:
-    ~LinkedList() override {
+    ~LinkedList() override
+    {
         this->curr = head;
-        while (curr) {
+        while (curr)
+        {
             Node<T>*dummy = curr;
             curr = curr->next;
-            dummy->next = nullptr;
             delete dummy;
             head = curr;
         }
-
-    };
+    }
 
     LinkedList()
     {
@@ -176,6 +176,7 @@ public:
         this->data = new LinkedList<LinkedList<int>*>();
        this-> labels = new LinkedList<string>();
     }
+    /*
     ~Dataset()
     {
         for(int i=0; i < data->length(); i++)
@@ -184,13 +185,22 @@ public:
             row->clear();
             delete row;
         }
-        delete data;
+//        delete data;
 
         for(int i=0; i < labels->length(); i++)
         {
             labels->remove(i);
         }
+  //      delete labels;
+    }
+     */
+    ~Dataset() {
         delete labels;
+        for (int i = 0; i < data->length(); i++) {
+            delete data->get(i);
+        }
+        delete data;
+
     }
     Dataset(const Dataset& other);
     Dataset& operator=(const Dataset& other)
@@ -207,23 +217,27 @@ public:
 
     int getRow() const
     {
-        return n;
+        return this->getData()->length();
     }
     int getCols() const
     {
-        return k;
+        return this->getData()->get(0)->length();
     }
 
     bool getSize() const;
     bool loadFromCSV(const char* name);
-    void printHead(int nRows = 5, int nCols = 5) const;
+    void printHead(int nRows, int nCols) const;
     void printTail(int nRows = 5, int nCols = 5) const;
     void getShape(int& nRows, int& nCols) const;
     void columns() const;
     bool drop(int axis = 0, int index = 0, std::string columns = "");
     Dataset extract(int startRow = 0, int endRow = -1, int startCol = 0, int endCol = -1) const;
-    LinkedList<LinkedList<int> > getData() const;
+    LinkedList<LinkedList<int>* >* getData() const;
     void printLabel() const;
+    void printDim() const
+    {
+        cout << "Rows: " << this->data->length() << " Cols: " << this->data->get(0)->length() << endl;
+    }
 };
 
 
@@ -252,28 +266,47 @@ public:
         size = 0;
         capacity = 10;
     }
-    ~ArrayList()
+    ~ArrayList() override
     {
+
         delete[] data;
+
     }
-ArrayList(const ArrayList& other)
+
+    ArrayList(int size)
     {
-        size = other.size;
-        capacity = other.capacity;
-        data = new T[capacity];
+        data = new T[size];
+        this->size = 0;
+        capacity = size;
+
+    }
+    ArrayList(const ArrayList& other)
+    {
+            this->size = other.size;
+            this->capacity = other.capacity;
+            this->data = new T[capacity];
+            for (int i = 0; i < size; i++)
+            {
+                data[i] = other.data[i];
+            }
+    }
+    ArrayList& operator=(const ArrayList& other)
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+        delete[] data;
+        this->size = other.size;
+        this->capacity = other.capacity;
+        this->data = new T[capacity];
         for (int i = 0; i < size; i++)
         {
             data[i] = other.data[i];
         }
+        return *this;
     }
-    ArrayList(int size)
-    {
-        data = new T[size];
-        this->size = size;
-        capacity = size;
-
-    }
- T& operator [] (int index) const
+    T& operator [] (int index) const
  {
      if (index < 0 || index >= size)
      {
@@ -297,6 +330,10 @@ ArrayList(const ArrayList& other)
     int length() const override;
     void clear() override;
     void print() const override;
+    void dim() const
+    {
+        cout << "Size: " << size << " Capacity: " << capacity << endl;
+    }
     void reverse() override;
 };
 
@@ -307,11 +344,20 @@ private:
     int k;
     //You may need to define more
 public:
-    ArrayList<ArrayList<int> *> * convert2D(const LinkedList<LinkedList<int>> &list);
-    ArrayList<int>* convert1D(const LinkedList<int> &list);
+    ArrayList<ArrayList<int> *> * convert2D(LinkedList<LinkedList<int>*> *list);
+    ArrayList<int>* convert1D( LinkedList<int>* list);
+    kNN()
+    {
+        k =0;
+        xTrain = nullptr;
+        yTrain = nullptr;
+    };
+
     kNN(int k)
     {
+        xTrain = nullptr;
         this->k = k;
+        yTrain = nullptr;
     }
     void reset();
     void fit(const Dataset& X_train, const Dataset& y_train);
@@ -328,9 +374,11 @@ public:
 
     ~kNN()
     {
+
         if(xTrain != nullptr)
         {
             xTrain->clear();
+
             delete xTrain;
         }
         else
@@ -346,8 +394,6 @@ public:
         {
 
         }
-
-
     }
 
 };
